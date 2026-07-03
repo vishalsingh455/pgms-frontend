@@ -1,23 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Home, LogIn, UserCheck, ShieldAlert, Coffee, LogOut } from 'lucide-react';
+import { Home, UserCheck, ShieldAlert, Coffee, LogOut } from 'lucide-react';
 import { Button } from './components/ui/Button';
 import { Card } from './components/ui/Card';
 import { Input } from './components/ui/Input';
 import { apiClient } from './services/apiClient';
+// WHY: Import the live color-coded asset matrix grid component built in Days 23 & 24
+import OccupancyGrid from './components/owner/OccupancyGrid';
 
 export default function App() {
-  // WHY: Application-wide core state hooks to track authentication status, role permissions, and active views
+  // WHY: Main React state engines holding our security access configurations and view routers
   const [token, setToken] = useState(localStorage.getItem('pgms_jwt_token'));
   const [userRole, setUserRole] = useState(localStorage.getItem('pgms_user_role') || '');
   const [userName, setUserName] = useState(localStorage.getItem('pgms_user_name') || '');
   const [currentView, setCurrentView] = useState('dashboard');
 
-  // Login Form field inputs state
+  // Form input field state monitors
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // WHY: Sync state changes instantly with browser vault caches
+  // WHY: Automatically sync token updates to browser local storage so logins persist on refresh
   useEffect(() => {
     if (token) {
       localStorage.setItem('pgms_jwt_token', token);
@@ -28,14 +30,13 @@ export default function App() {
     }
   }, [token, userRole, userName]);
 
-  // WHY: Handle user authentication submission event strings
+  // WHY: Communicates with backend authentication routes to approve token credentials
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
     setIsSubmitting(true);
 
     try {
-      // Hit our backend login controller node via our secure apiClient
       const response = await apiClient('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials)
@@ -48,7 +49,7 @@ export default function App() {
         setCurrentView('dashboard');
       }
     } catch (err) {
-      setLoginError(err.message || 'Invalid credentials profile signature configuration.');
+      setLoginError(err.message || 'Incorrect email or password combination configuration.');
     } finally {
       setIsSubmitting(false);
     }
@@ -62,10 +63,10 @@ export default function App() {
   };
 
   // =========================================================================
-  // VIEW RENDER LAYOUTS (RENDER CONDITIONS)
+  // CONDITIONAL VIEW ROUTING PANELS
   // =========================================================================
 
-  // 1. UNAUTHENTICATED STATE: Render clean form panels
+  // PANEL 1: GATEWAY ACCESS LOCK (If token keycard is missing)
   if (!token) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -106,17 +107,17 @@ export default function App() {
     );
   }
 
-  // 2. AUTHENTICATED SYSTEM SHELL GRID
+  // PANEL 2: CORE WRAPPED INTERFACE CONTAINER (When logged in successfully)
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row">
 
-      {/* SIDEBAR NAVIGATION CONTROL DOCK */}
+      {/* SIDEBAR NAVIGATION DOCK */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col justify-between p-4 shadow-md">
         <div>
           <div className="pb-4 mb-6 border-b border-slate-700 flex items-center gap-3">
             <Home className="text-blue-400 h-6 w-6" />
             <div>
-              <h1 className="font-bold text-md tracking-wide truncate">{userName}</h1>
+              <h1 className="font-bold text-md tracking-wide truncate max-w-[160px]">{userName}</h1>
               <span className="text-xs text-blue-400 font-semibold uppercase tracking-wider">{userRole}</span>
             </div>
           </div>
@@ -145,27 +146,40 @@ export default function App() {
         </button>
       </aside>
 
-      {/* CORE CONTENT WORKSPACE DISPLAY PANELS */}
+      {/* VIEW PANEL WORKSPACE */}
       <main className="flex-1 p-6 md:p-8 overflow-y-auto">
         <header className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800 capitalize">{currentView} Panel</h2>
-          <p className="text-sm text-gray-500">Welcome back! Manage your physical residency operational actions here.</p>
+          <p className="text-sm text-gray-500">Coordinate and observe active PG operational workflows.</p>
         </header>
 
+        {/* COMPONENT CONDITIONAL ROUTER ROUTING LOGIC */}
         {currentView === 'dashboard' ? (
           <div className="grid grid-cols-1 gap-6">
-            <Card title="Active System Workspace Shell" subtitle="Operational Matrix Baseline Standby">
-              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Coffee className="h-12 w-12 text-slate-300 mb-3 animate-pulse" />
-                <p className="text-sm font-medium">Ready to inject live analytical grids and management modules.</p>
-                <p className="text-xs text-gray-400 mt-1">Select menu views on the sidebar to inspect structural assets.</p>
+            {/* WHY: Enforce Role Based Frontend Rendering. 
+                If an owner logs in, give them the complex interactive matrix grid map layout.
+                If a caretaker or tenant logs in, display their custom baseline home spaces. */}
+            {userRole === 'PropertyOwner' || userRole === 'SuperAdmin' ? (
+              // NOTE: Swap this placeholder string with an actual generated property _id from your Postman response!
+              <OccupancyGrid propertyId="6a466272a1d895507862c3c1" />
+            ) : (
+              <Card title="Tenant Hub Standby" subtitle="Welcome to your resident dashboard profile">
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <Coffee className="h-12 w-12 text-slate-300 mb-3 animate-pulse" />
+                  <p className="text-sm font-medium text-gray-600">Your roommate and billing ledger entries are standing by.</p>
+                  <p className="text-xs text-gray-400 mt-1">Navigate using the control sidebar docks to log issues or opt out of meals.</p>
+                </div>
+              </Card>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            <Card title="Functional Pipeline Context" subtitle="Integrated Operational Features Portal">
+              <div className="p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-sm font-medium">
+                🔒 Security Verified Node: This area will host the interactive Tenant Ticketing Grid Form and Food Optimization Module Calendars in our upcoming days!
               </div>
             </Card>
           </div>
-        ) : (
-          <Card title="Feature Pipeline Context" subtitle="Target Area Node Loading Screen Link">
-            <p className="text-sm text-gray-600">This target lane area holds domain views (Occupancy Matrices / Ticket Forms) connecting next week.</p>
-          </Card>
         )}
       </main>
     </div>
